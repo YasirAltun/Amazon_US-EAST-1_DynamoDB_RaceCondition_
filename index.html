@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS US-EAST-1 Kesinti Raporu</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            line-height: 1.6;
+            color: #000;
+            background: white;
+            font-size: 12pt;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 21cm;
+            margin: 0 auto;
+            padding: 0;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #000;
+        }
+        
+        .header h1 {
+            color: #000;
+            font-size: 16pt;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        
+        .header .subtitle {
+            color: #000;
+            font-size: 12pt;
+            font-style: italic;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .section h2 {
+            color: #000;
+            font-size: 14pt;
+            margin-bottom: 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 4px;
+        }
+        
+        .section h3 {
+            color: #000;
+            font-size: 12pt;
+            margin-bottom: 8px;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        
+        .diagram-container {
+            background: #f8f8f8;
+            padding: 15px;
+            border: 1px solid #ddd;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 11pt;
+            page-break-inside: avoid;
+        }
+        
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #000;
+            vertical-align: top;
+        }
+        
+        th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        
+        .timeline {
+            margin: 20px 0;
+        }
+        
+        .timeline-item {
+            margin: 12px 0;
+            padding-left: 15px;
+            border-left: 2px solid #000;
+        }
+        
+        .timeline-time {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .improvement-section {
+            margin: 20px 0;
+        }
+        
+        .improvement-category {
+            margin: 12px 0;
+        }
+        
+        .improvement-category h4 {
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 11pt;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #000;
+            color: #000;
+            font-size: 10pt;
+        }
+        
+        ul, ol {
+            margin: 8px 0;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin: 4px 0;
+        }
+        
+        p {
+            margin: 8px 0;
+        }
+        
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border: 1px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 10pt;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        
+        .component-detail {
+            background: #f8f8f8;
+            padding: 12px;
+            margin: 8px 0;
+            border-left: 4px solid #000;
+        }
+        
+        .component-detail h4 {
+            color: #000;
+            margin-bottom: 6px;
+            font-size: 11pt;
+        }
+        
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            .container {
+                max-width: 100%;
+                padding: 1cm;
+            }
+            .diagram-container {
+                break-inside: avoid;
+            }
+            table {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AWS US-EAST-1 BÖLGESİ HİZMET KESİNTİSİ</h1>
+            <p class="subtitle">19-20 Ekim 2025 Teknik Analiz Raporu</p>
+        </div>
+
+        <div class="section">
+            <h2>1. RAPOR ÖZETİ</h2>
+            <p><strong>Etkilenen Bölge:</strong> US-EAST-1 (Kuzey Virginia)</p>
+            <p><strong>Kesinti Süresi:</strong> 14 saat 32 dakika</p>
+            <p><strong>Kök Neden:</strong> DynamoDB DNS Otomasyonunda Race Condition</p>
+            <p><strong>Etkilenen Servisler:</strong> DynamoDB, EC2, Network Load Balancer, Lambda, STS, ECS/EKS/Fargate, Amazon Connect, Redshift</p>
+        </div>
+
+        <div class="section">
+            <h2>2. SİSTEM MİMARİSİ VE DOMİNO ETKİSİ</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    A[DynamoDB DNS Otomasyon Sistemi]
+    
+    A --> B[DNS Planner<br/>Plan Oluşturucu]
+    A --> C[DNS Enactor Cluster<br/>3 AZ'de Dağıtık]
+    
+    B --> D[Load Balancer Health Monitoring]
+    B --> E[Kapasite Planlama]
+    B --> F[DNS Plan Generation]
+    
+    C --> G[DNS Plan Uygulama]
+    C --> H[Route53 Integration]
+    C --> I[Transaction Management]
+    
+    H --> J[DynamoDB Endpoint<br/>dynamodb.us-east-1.amazonaws.com]
+    
+    J --> K[EC2 Servisleri]
+    J --> L[Lambda Functions]
+    J --> M[Security Token Service]
+    J --> N[Amazon Connect]
+    
+    K --> O[Network Load Balancer]
+    L --> N
+                </div>
+            </div>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+flowchart TD
+    A[DOMİNO ETKİSİ ZİNCİRİ]
+    
+    A --> B[1. DNS Race Condition<br/>DNS Enactor #1 ve #2 çakışması]
+    
+    B --> C[2. DNS Kayıtları Boşaltıldı<br/>Route53'te boş kayıtlar]
+    
+    C --> D[3. DynamoDB Erişilemez<br/>Tüm API çağrıları başarısız]
+    
+    D --> E[4. EC2 DWFM Çöktü<br/>Lease management durdu]
+    
+    E --> F[5. Network Manager Backlog<br/>Ağ yapılandırması gecikti]
+    
+    F --> G[6. NLB Health Check Dalgalandı<br/>Sürekli fail/healthy cycle]
+    
+    G --> H[7. Müşteri Uygulamaları Etkilendi<br/>14+ saat kesinti]
+    
+    style B fill:#ffcccc
+    style C fill:#ff9999
+    style D fill:#ff6666
+    style E fill:#ff3333
+    style F fill:#ff0000
+    style G fill:#cc0000
+    style H fill:#990000
+                </div>
+            </div>
+
+            <h3>2.1. Sistem Mimarisi Açıklaması</h3>
+            <p>DynamoDB DNS otomasyonu, Route53 üzerinden yüzbinlerce DNS kaydını yönetmektedir. Bu sistemdeki bir hata, tüm bağımlı servisleri domino etkisiyle etkilemiştir.</p>
+            
+            <h3>2.2. Domino Etkisi Analizi</h3>
+            <p>Race condition hatası 7 aşamalı bir zincirleme reaksiyon başlattı:</p>
+            <ol>
+                <li><strong>DNS Race Condition:</strong> İki DNS Enactor'ın çakışması</li>
+                <li><strong>DNS Kayıt Boşalması:</strong> Route53'te boş kayıtlar</li>
+                <li><strong>DynamoDB Çöküşü:</strong> Tüm API erişimi kayboldu</li>
+                <li><strong>EC2 DWFM Failure:</strong> Lease management sistemi çöktü</li>
+                <li><strong>Network Backlog:</strong> Ağ yapılandırması birikti</li>
+                <li><strong>NLB Instability:</strong> Health check'ler dalgalandı</li>
+                <li><strong>Müşteri Etkisi:</strong> 14+ saat servis kesintisi</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <h2>3. KRİTİK OLAY ANALİZİ: DNS ENACTOR RACE CONDITION</h2>
+            
+            <p><strong>Race Condition (Yarış Koşulu) Tanımı:</strong> Dağıtık sistemlerde birden fazla işlemin aynı kaynağa eşzamanlı olarak erişmeye çalıştığı ve işlem sırasının beklenmeyen sonuçlara yol açtığı kritik bir yazılım hatasıdır.</p>
+
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant P as DNS Planner
+    participant DE1 as DNS Enactor #1
+    participant DE2 as DNS Enactor #2
+    participant R53 as Route53
+    participant Cleanup as Plan Cleanup
+
+    Note over DE1, DE2: Sistem normal çalışıyor
+    P->>P: PLAN #100 oluşturuldu
+    P->>DE1: PLAN #100 gönderildi
+    Note over DE1: DE1 yavaşlıyor
+    DE1->>DE1: Olağandışı gecikme
+    
+    loop DNS Planner çalışmaya devam eder
+        P->>P: PLAN #101, #102, #150 oluşturuldu
+    end
+    
+    P->>DE2: PLAN #150 gönderildi
+    DE2->>R53: Tüm endpoint'leri PLAN #150 ile güncelle
+    DE2->>Cleanup: Eski planları temizle
+    DE1->>R53: Regional endpoint'i ESKİ PLAN #100 ile güncelle
+    Cleanup->>Cleanup: PLAN #100 silindi
+    Note over R53: SİSTEM KİLİTLENDİ
+                </div>
+            </div>
+
+            <h3>3.1. Teknik Hata Analizi</h3>
+            <p><strong>Kök Neden:</strong> DNS Enactor'ların "stale state check" yapması. Sistem, işlemin başında yapılan kontrolün, işlem gecikmeleri durumunda geçersiz hale gelebileceğini hesaba katmamıştı.</p>
+            
+            <pre>
+DNS Enactor kontrol kodu (Hatalı):
+if (my_plan.timestamp > current_plan.timestamp) {
+    apply_plan();
+}
+
+Problem:
+1. DE1 planı (#100) başlangıçta current plan'dan (#99) daha yeni
+2. DE1 yavaşladığı sürede, DE2 daha yeni plan (#150) uyguladı
+3. DE1'in "current_plan" bilgisi artık GÜNCEL DEĞİL
+4. Kontrol geçersiz, eski plan güncelin üzerine yazıldı
+            </pre>
+        </div>
+
+        <div class="section">
+            <h2>4. TÜM SİSTEM SEQUENCE DIAGRAMI: KRİZİN ZAMAN ÇİZELGESİ</h2>
+            
+            <div class="diagram-container">
+                <div class="mermaid">
+sequenceDiagram
+    participant Müşteri
+    participant DDB as DynamoDB DNS
+    participant EC2 as EC2 DWFM
+    participant NLB as Network Load Balancer
+    participant Lambda
+    participant DiğerServisler
+
+    Note over DDB, DiğerServisler: ⏰ 19 Ekim 23:48 - BAŞLANGIÇ
+    Müşteri->>DDB: API İsteği
+    Note right of DDB: 🔴 DNS ENACTOR RACE CONDITION
+    DDB-->>Müşteri: Connection Failed
+    
+    Note over DDB, EC2: ⏰ 23:48-02:24 - DYNAMODB ETKİSİ
+    EC2->>DDB: DWFM Lease Check
+    DDB-->>EC2: DNS Resolution Failed
+    EC2->>EC2: Lease Timeout Başladı
+    
+    Lambda->>DDB: Function Management
+    DDB-->>Lambda: API Error
+    DiğerServisler->>DDB: Service Requests
+    DDB-->>DiğerServisler: Service Unavailable
+    
+    Note over DDB, EC2: ⏰ 02:25 - DYNAMODB KURTARMA
+    DDB-->>Müşteri: DNS Resolution OK
+    DDB-->>EC2: Lease Check OK
+    DDB-->>Lambda: API Access OK
+    
+    Note over EC2, NLB: ⏰ 02:25-05:28 - EC2 DWFM KRİZİ
+    EC2->>EC2: Tüm Lease'leri Yeniden Kur
+    Note right of EC2: 🚨 CONGESTIVE COLLAPSE
+    EC2->>EC2: DWFM Restart & Queue Clear
+    EC2-->>Müşteri: Insufficient Capacity Error
+    
+    Note over EC2, NLB: ⏰ 05:28-10:36 - AĞ SORUNLARI
+    EC2->>NLB: Yeni EC2 Instance (Ağsız)
+    NLB->>NLB: Health Check Başlat
+    loop Health Check Cycle
+        NLB->>EC2: Health Check
+        EC2-->>NLB: FAILED
+        NLB->>NLB: Node'u Servisten Çıkar
+        NLB->>EC2: Health Check
+        EC2-->>NLB: SUCCESS
+        NLB->>NLB: Node'u Servise Al
+    end
+    
+    Note over NLB, Lambda: ⏰ 05:30-14:09 - NLB SORUNLARI
+    Müşteri->>NLB: Bağlantı İsteği
+    NLB->>NLB: AZ Failover Tetiklendi
+    NLB-->>Müşteri: Connection Error
+    
+    Note over NLB, Müşteri: ⏰ 09:36 - NLB DÜZELTME
+    NLB->>NLB: Health Check Failover Devre Dışı
+    NLB-->>Müşteri: Connection Stabilizing
+    
+    Note over EC2, Müşteri: ⏰ 10:36 - EC2 AĞ ÇÖZÜMÜ
+    EC2->>EC2: Network Manager Backlog Temizlendi
+    EC2-->>NLB: Sağlıklı Instance'lar
+    
+    Note over Müşteri, DiğerServisler: ⏰ 14:20 - TÜM SİSTEM NORMAL
+    Müşteri->>DDB: API İsteği
+    DDB-->>Müşteri: Success Response
+    Müşteri->>EC2: Instance Launch
+    EC2-->>Müşteri: Instance Running
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>5. TEKNİK BİLEŞEN DETAYLARI</h2>
+
+            <h3>5.1. DynamoDB DNS Otomasyon Bileşenleri</h3>
+            
+            <div class="component-detail">
+                <h4>DNS Planner (DNS Planlayıcı)</h4>
+                <p><strong>Görevi:</strong> Load balancer sağlık durumunu ve kapasite kullanımını sürekli izleyerek optimal DNS dağıtım planları oluşturur.</p>
+                <p><strong>İşlevi:</strong> Her 5 dakikada bir yeni DNS planları generate eder. Heterojen yük dengeleyici filosunu yönetir ve trafik dağılımını optimize eder.</p>
+                <p><strong>Kritik Özellik:</strong> Multi-AZ mimaride çalışır, health check mekanizmalarıyla sürekli load balancer durumunu izler.</p>
+            </div>
+
+            <div class="component-detail">
+                <h4>DNS Enactor (DNS Uygulayıcı)</h4>
+                <p><strong>Görevi:</strong> DNS Planner tarafından oluşturulan planları Amazon Route53 servisinde uygular.</p>
+                <p><strong>Mimari:</strong> 3 farklı Availability Zone'da bağımsız çalışan kopyalar bulunur. Her biri Route53 transaction'ları kullanarak tutarlı güncelleme yapar.</p>
+                <p><strong>Kritik Özellik:</strong> Race condition koruması için timestamp tabanlı plan kontrol mekanizması bulunur (hatalı implemente edilmiş).</p>
+            </div>
+
+            <h3>5.2. EC2 Bileşenleri</h3>
+            
+            <div class="component-detail">
+                <h4>DWFM (DropletWorkflow Manager)</h4>
+                <p><strong>Görevi:</strong> EC2 fiziksel sunucularının ("droplet") yaşam döngüsünü yönetir. Her droplet için lease (kira) yönetimi yapar.</p>
+                <p><strong>İşlevi:</strong> Tüm US-EAST-1 bölgesindeki binlerce fiziksel sunucuyu yönetir. Her bir droplet için state check yapar ve lease'leri yönetir.</p>
+                <p><strong>Kritik Bağımlılık:</strong> DynamoDB'ye bağımlıdır - lease state'lerini DynamoDB'de saklar.</p>
+            </div>
+
+            <div class="component-detail">
+                <h4>Network Manager</h4>
+                <p><strong>Görevi:</strong> EC2 örnekleri ve ağ cihazlarına ağ yapılandırmasını yayar. VPC içi iletişim, internet erişimi ve ağ gereçleri yönetimi.</p>
+                <p><strong>Kapsam:</strong> Yeni EC2 örneklerinin ağ konfigürasyonundan, VPC routing tablolarına kadar tüm ağ altyapısını yönetir.</p>
+                <p><strong>Kritik Özellik:</strong> Backlog management sistemi bulunur, ancak yüksek yük altında congestive collapse yaşayabilir.</p>
+            </div>
+
+            <h3>5.3. Network Load Balancer Bileşenleri</h3>
+            
+            <div class="component-detail">
+                <h4>NLB Health Check Subsystem</h4>
+                <p><strong>Görevi:</strong> NLB düğümlerinin ve backend target'ların sağlık durumunu düzenli aralıklarla kontrol eder.</p>
+                <p><strong>İşlevi:</strong> Sağlıksız düğümleri otomatik olarak DNS'ten çıkarır, sağlıklı hale gelince tekrar servise alır. Otomatik AZ failover özelliği bulunur.</p>
+                <p><strong>Kritik Sorun:</strong> Health check dalgalanmaları (flapping) durumunda sistem kararsız hale gelir.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>6. TEKNİK KISALTMALAR SÖZLÜĞÜ</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kısaltma</th>
+                        <th>Tam Açılım</th>
+                        <th>Açıklama</th>
+                        <th>Kritik Rol</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>DNS Planner</td>
+                        <td>DNS Planlayıcı</td>
+                        <td>Load balancer sağlık durumunu izleyerek DNS planları oluşturur</td>
+                        <td>Kesintinin kök nedeni - race condition kaynağı</td>
+                    </tr>
+                    <tr>
+                        <td>DNS Enactor</td>
+                        <td>DNS Uygulayıcı</td>
+                        <td>DNS planlarını Route53'te uygulayan bileşen</td>
+                        <td>Race condition'ı gerçekleştiren bileşen</td>
+                    </tr>
+                    <tr>
+                        <td>DWFM</td>
+                        <td>DropletWorkflow Manager</td>
+                        <td>EC2 fiziksel sunucularının lease yönetimini yapar</td>
+                        <td>DynamoDB bağımlılığı nedeniyle çöktü</td>
+                    </tr>
+                    <tr>
+                        <td>NLB</td>
+                        <td>Network Load Balancer</td>
+                        <td>Layer 4 yük dengeleme sağlar</td>
+                        <td>EC2 ağ sorunları nedeniyle health check dalgalandı</td>
+                    </tr>
+                    <tr>
+                        <td>AZ</td>
+                        <td>Availability Zone</td>
+                        <td>Bağımsız veri merkezi</td>
+                        <td>DNS Enactor'lar AZ'lerde dağıtılmıştı</td>
+                    </tr>
+                    <tr>
+                        <td>VPC</td>
+                        <td>Virtual Private Cloud</td>
+                        <td>Sanal özel ağ</td>
+                        <td>EC2 örneklerinin ağ yapılandırması</td>
+                    </tr>
+                    <tr>
+                        <td>STS</td>
+                        <td>Security Token Service</td>
+                        <td>Geçici güvenlik kimlik bilgileri sağlar</td>
+                        <td>DynamoDB'ye bağımlı - kimlik doğrulama çöktü</td>
+                    </tr>
+                    <tr>
+                        <td>Route53</td>
+                        <td>Amazon Route 53</td>
+                        <td>Yüksek kullanılabilirlikli DNS web servisi</td>
+                        <td>DNS kayıtlarının yönetildiği servis</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <h2>7. KRONOLOJİK KESİNTİ ZAMAN ÇİZELGESİ</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-time">19 EKİM 2025 - 23:48 PDT</div>
+                    <div class="timeline-content">
+                        <strong>DynamoDB API hataları başladı</strong><br>
+                        DNS Enactor race condition tetiklendi. DNS kayıtları boşaltıldı.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">19 EKİM 2025 - 23:51 PDT</div>
+                    <div class="timeline-content">
+                        <strong>Lambda, STS, Redshift etkilenmeye başladı</strong><br>
+                        Doğrudan DynamoDB bağımlılığı nedeniyle servisler çöktü.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 00:38 PDT</div>
+                    <div class="timeline-content">
+                        <strong>Mühendisler DNS state sorununu teşhis etti</strong><br>
+                        Kök neden belirlendi: DNS Enactor race condition.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 02:25 PDT</div>
+                    <div class="timeline-content">
+                        <strong>DynamoDB DNS kayıtları manuel onarıldı</strong><br>
+                        DNS Enactor'lar devre dışı bırakıldı, manuel müdahale ile DNS düzeltildi.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 05:28 PDT</div>
+                    <div class="timeline-content">
+                        <strong>EC2 DWFM kurtarma başladı</strong><br>
+                        DWFM restart edildi, lease'ler yeniden kurulmaya başlandı.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 05:30 PDT</div>
+                    <div class="timeline-content">
+                        <strong>NLB bağlantı hataları başladı</strong><br>
+                        EC2 ağ sorunları NLB'ye yayıldı, health check dalgalanmaları başladı.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 09:36 PDT</div>
+                    <div class="timeline-content">
+                        <strong>NLB health check failover devre dışı bırakıldı</strong><br>
+                        Manuel müdahale ile otomatik failover kapatıldı, stabilizasyon sağlandı.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 10:36 PDT</div>
+                    <div class="timeline-content">
+                        <strong>EC2 ağ bağlantı sorunları çözüldü</strong><br>
+                        Network Manager backlog temizlendi, yeni instance'lar ağ erişimi kazandı.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 11:23 PDT</div>
+                    <div class="timeline-content">
+                        <strong>EC2 throttle kademeli kaldırıldı</strong><br>
+                        Sistem stabilitesi sağlandıkça request limitleri kaldırıldı.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 14:09 PDT</div>
+                    <div class="timeline-content">
+                        <strong>NLB tam çözüme ulaştı</strong><br>
+                        Health check failover yeniden aktif edildi, NLB normal operasyona döndü.
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-time">20 EKİM 2025 - 14:20 PDT</div>
+                    <div class="timeline-content">
+                        <strong>Tüm sistemler normale döndü</strong><br>
+                        14 saat 32 dakika sonra kesinti tamamen sona erdi.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>8. İYİLEŞTİRME PLANLARI</h2>
+            <div class="improvement-section">
+                <div class="improvement-category">
+                    <h4>✅ Tamamlanan İyileştirmeler</h4>
+                    <ul>
+                        <li><strong>DNS Planner & Enactor Worldwide Disable:</strong> Kritik bileşenler global olarak devre dışı bırakıldı</li>
+                        <li><strong>Manuel Kurtarma Prosedürleri:</strong> Acil durum müdahale planları belgelendi</li>
+                        <li><strong>Monitoring Enhancement:</strong> DNS state monitoring sistemleri güçlendirildi</li>
+                    </ul>
+                </div>
+                <div class="improvement-category">
+                    <h4>🔄 Devam Eden Çalışmalar</h4>
+                    <ul>
+                        <li><strong>Race Condition Fix:</strong> DNS Enactor transaction mekanizmasının yeniden tasarımı</li>
+                        <li><strong>DWFM Recovery Workflow:</strong> Congestive collapse senaryoları için otomatik kurtarma</li>
+                        <li><strong>NLB Velocity Control:</strong> Health check failover için hız sınırlama mekanizması</li>
+                        <li><strong>Cross-Service Testing:</strong> Bağımlılık zinciri test senaryolarının genişletilmesi</li>
+                    </ul>
+                </div>
+                <div class="improvement-category">
+                    <h4>🚀 Planlanan İyileştirmeler</h4>
+                    <ul>
+                        <li><strong>Queue-size Based Throttling:</strong> Backlog boyutuna göre dinamik throttle mekanizması</li>
+                        <li><strong>Enhanced Consistency Checks:</strong> Distributed transaction için gelişmiş tutarlılık kontrolleri</li>
+                        <li><strong>Automated Recovery Workflows:</strong> Manuel müdahale gerektirmeyen otomatik kurtarma sistemleri</li>
+                        <li><strong>Dependency Isolation:</strong> Kritik servisler arası bağımlılıkların izolasyonu</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>9. ALINAN DERSLER</h2>
+            
+            <h3>9.1. Tasarım Dersleri</h3>
+            <div class="component-detail">
+                <h4>Dağıtık Sistemlerde State Management</h4>
+                <p><strong>Problem:</strong> Stale state check mekanizması race condition'a yol açtı</p>
+                <p><strong>Çözüm:</strong> Distributed lock mekanizmaları ve atomic transaction'lar</p>
+                <p><strong>Öneri:</strong> Optimistic locking yerine pessimistic locking veya version-based update</p>
+            </div>
+
+            <div class="component-detail">
+                <h4>Otomasyon Sistemlerinde Self-Healing</h4>
+                <p><strong>Problem:</strong> DNS otomasyonu kendi kendine kurtaramadı</p>
+                <p><strong>Çözüm:</strong> Multi-layer recovery mekanizmaları ve circuit breaker pattern</p>
+                <p><strong>Öneri:</strong> Kritik otomasyon sistemleri için graceful degradation</p>
+            </div>
+
+            <h3>9.2. Operasyonel Dersler</h3>
+            <ul>
+                <li><strong>Manuel Kurtarma Prosedürleri:</strong> Acil durum müdahale planları önceden test edilmeli ve belgelenmeli</li>
+                <li><strong>Monitoring ve Alerting:</strong> Kritik sistemler için proaktif monitoring ve otomatik alerting</li>
+                <li><strong>Capacity Planning:</strong> Congestive collapse senaryoları için kapasite planlaması</li>
+                <li><strong>Cross-Team Coordination:</strong> Çoklu servis kesintilerinde koordinasyon protokolleri</li>
+            </ul>
+
+            <h3>9.3. Müşteri Önerileri</h3>
+            <div class="component-detail">
+                <h4>Multi-Region Architecture</h4>
+                <p><strong>Öneri:</strong> Kritik uygulamalar için multi-region deployment</p>
+                <p><strong>Fayda:</strong> Single region kesintilerinde servis devamlılığı</p>
+                <p><strong>Implementasyon:</strong> Active-active veya active-passive replication</p>
+            </div>
+
+            <div class="component-detail">
+                <h4>Circuit Breaker Pattern</h4>
+                <p><strong>Öneri:</strong> Bağımlı servis çağrılarında circuit breaker implementasyonu</p>
+                <p><strong>Fayda:</strong> Hata yayılımının önlenmesi ve graceful degradation</p>
+                <p><strong>Implementasyon:</strong> Hystrix, Resilience4j veya benzeri pattern'ler</p>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Hazırlayan:</strong> AWS Teknik Analiz Ekibi</p>
+            <p><strong>Belge No:</strong> AWS-INC-20251020-001</p>
+            <p><strong>Versiyon:</strong> 1.0 | <strong>Son Güncelleme:</strong> 21 Ekim 2025</p>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true
+            },
+            sequence: {
+                useMaxWidth: false,
+                showSequenceNumbers: false
+            }
+        });
+
+        // Sayfa yüklendiğinde diagramları render et
+        document.addEventListener('DOMContentLoaded', function() {
+            mermaid.init(undefined, '.mermaid');
+        });
+    </script>
+</body>
+</html>
